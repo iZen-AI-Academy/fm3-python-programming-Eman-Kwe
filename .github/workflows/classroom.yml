@@ -13,6 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       ASSIGNMENT_NAME: "FM3 - Python Programming"
+      ASSIGNMENT_REPO_PREFIX: "fm3-python-programming"
       MOODLE_URL: ${{ secrets.MOODLE_URL }}
       MOODLE_TOKEN: ${{ secrets.MOODLE_TOKEN }}
       MOODLE_COURSE_ID: "19"
