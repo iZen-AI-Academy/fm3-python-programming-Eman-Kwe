@@ -11,6 +11,44 @@ REPORT_PATH = Path("report.json")
 RESULTS_PATH = Path("results.json")
 MAP_PATH = Path("github_moodle_map.csv")
 
+KNOWN_NON_STUDENT_ACTORS = {"izen-academy", "github-classroom[bot]", "github-actions[bot]"}
+
+
+def resolve_github_username() -> str:
+    """
+    Determine the actual student's GitHub username.
+
+    GITHUB_ACTOR is who triggered this workflow run, which for GitHub
+    Classroom repos is often the org/bot account (e.g. on the template's
+    initial commit) rather than the student. The repo name is more
+    reliable since Classroom names repos "{prefix}-{student-username}".
+    """
+    actor = os.getenv("GITHUB_ACTOR", "")
+    repo = os.getenv("GITHUB_REPOSITORY", "")  # format: "org/repo-name"
+    repo_name = repo.split("/")[-1] if repo else ""
+    prefix = os.getenv("ASSIGNMENT_REPO_PREFIX", "fm3-python-programming")
+
+    if repo_name.startswith(prefix + "-"):
+        candidate = repo_name[len(prefix) + 1:]
+    else:
+        candidate = actor
+
+    if not candidate:
+        raise RuntimeError(
+            "Could not determine a GitHub username from either "
+            "GITHUB_REPOSITORY or GITHUB_ACTOR."
+        )
+
+    if candidate.strip().lower() in KNOWN_NON_STUDENT_ACTORS:
+        raise RuntimeError(
+            f"Resolved username '{candidate}' looks like a bot/org account, "
+            f"not a student (repo={repo!r}, actor={actor!r}). Refusing to "
+            f"sync a grade under this identity — check the repo naming or "
+            f"ASSIGNMENT_REPO_PREFIX."
+        )
+
+    return candidate
+
 
 def compute_score() -> dict:
     report = json.loads(REPORT_PATH.read_text(encoding="utf-8"))
@@ -23,7 +61,7 @@ def compute_score() -> dict:
     score = round((passed / total) * max_score, 2) if total else 0.0
 
     result = {
-        "github_username": os.getenv("GITHUB_ACTOR", "unknown"),
+        "github_username": resolve_github_username(),
         "assignment": os.getenv("ASSIGNMENT_NAME", "FM3 - Python Programming"),
         "score": score,
         "max_score": max_score,
