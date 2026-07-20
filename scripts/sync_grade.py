@@ -70,6 +70,7 @@ def sync_score() -> None:
         "component": "mod_assign",
         "courseid": course_id,
         "activityid": activity_id,
+        "itemnumber": 0,
         "source": "GitHub Classroom",
         "grades[0][studentid]": student_id,
         "grades[0][grade]": results["score"],
